@@ -128,12 +128,29 @@ def parse_natural_order_command(normalized: str) -> AddItemCommand | MultiComman
 
 
 def split_order_items(items_text: str) -> list[str]:
-    normalized_items = items_text.replace(",", " dan ")
+    normalized_items = normalize_order_separators(items_text)
     return [
-        item_text.strip()
+        clean_order_item_text(item_text)
         for item_text in normalized_items.split(" dan ")
-        if item_text.strip()
+        if clean_order_item_text(item_text)
     ]
+
+
+def normalize_order_separators(items_text: str) -> str:
+    normalized_items = items_text.replace(",", " dan ")
+    normalized_items = normalized_items.replace(" sama ", " dan ")
+    normalized_items = normalized_items.replace(" serta ", " dan ")
+    normalized_items = normalized_items.replace(" juga ", " dan ")
+    return normalized_items
+
+
+def clean_order_item_text(item_text: str) -> str:
+    item_text = item_text.strip()
+
+    while item_text.startswith("dan "):
+        item_text = item_text.removeprefix("dan ").strip()
+
+    return item_text
 
 
 def parse_order_item_text(item_text: str) -> AddItemCommand | None:
@@ -145,8 +162,12 @@ def parse_order_item_text(item_text: str) -> AddItemCommand | None:
         qty = int(parts[0])
         product_keyword = " ".join(parts[1:]).strip()
     except ValueError:
-        qty = 1
-        product_keyword = item_text.strip()
+        try:
+            qty = int(parts[-1])
+            product_keyword = " ".join(parts[:-1]).strip()
+        except ValueError:
+            qty = 1
+            product_keyword = item_text.strip()
 
     if qty <= 0 or not product_keyword:
         return None
