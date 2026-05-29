@@ -50,8 +50,9 @@ class AgentTest(unittest.TestCase):
     def test_process_multi_item_order_adds_items_to_cart(self) -> None:
         response = self.agent.process("Saya mau beli kopi dan gula")
 
-        self.assertIn("Produk: Kopi", response)
-        self.assertIn("Produk: Gula", response)
+        self.assertIn("Berhasil menambahkan", response)
+        self.assertIn("- Kopi x1", response)
+        self.assertIn("- Gula x1", response)
         self.assertEqual(
             [(item.product_name, item.qty) for item in self.agent.cart.items],
             [("Kopi", 1), ("Gula", 1)],
@@ -67,6 +68,37 @@ class AgentTest(unittest.TestCase):
         )
         self.assertEqual(self.agent.cart.subtotal, 46000)
 
+    def test_process_multi_item_order_continues_when_product_not_found(self) -> None:
+        response = self.agent.process("beli kopi, sabun, dan gula")
+
+        self.assertIn("Berhasil menambahkan", response)
+        self.assertIn("- Kopi x1", response)
+        self.assertIn("- Gula x1", response)
+        self.assertIn("Produk tidak ditemukan", response)
+        self.assertIn("- sabun", response)
+        self.assertEqual(
+            [(item.product_name, item.qty) for item in self.agent.cart.items],
+            [("Kopi", 1), ("Gula", 1)],
+        )
+        self.assertEqual(self.agent.cart.subtotal, 15000)
+
+    def test_process_single_missing_product_uses_simple_not_found_response(self) -> None:
+        response = self.agent.process("beli sabun")
+
+        self.assertEqual(response, "AI: Produk 'sabun' tidak ditemukan.")
+        self.assertTrue(self.agent.cart.is_empty())
+
+    def test_process_multi_item_order_when_all_products_not_found(self) -> None:
+        response = self.agent.process("beli sabun dan sampo")
+
+        self.assertIn("Berhasil menambahkan", response)
+        self.assertIn("- Tidak ada", response)
+        self.assertIn("Produk tidak ditemukan", response)
+        self.assertIn("- sabun", response)
+        self.assertIn("- sampo", response)
+        self.assertIn("- Cart masih kosong", response)
+        self.assertTrue(self.agent.cart.is_empty())
+
     def test_process_ambiguous_item_then_continues_remaining_order(self) -> None:
         first_response = self.agent.process("Saya mau beli ayam dan gula")
 
@@ -78,11 +110,32 @@ class AgentTest(unittest.TestCase):
         second_response = self.agent.process("geprek")
 
         self.assertIn("Produk: Ayam Geprek", second_response)
-        self.assertIn("Produk: Gula", second_response)
+        self.assertIn("- Gula x1", second_response)
         self.assertIsNone(self.agent.pending_action)
         self.assertEqual(
             [(item.product_name, item.qty) for item in self.agent.cart.items],
             [("Ayam Geprek", 1), ("Gula", 1)],
+        )
+
+    def test_process_ambiguous_item_then_continues_remaining_order_with_missing_product(
+        self,
+    ) -> None:
+        first_response = self.agent.process("Saya mau beli ayam, sabun, dan gula")
+
+        self.assertIn("Ayam Geprek", first_response)
+        self.assertIn("Ayam Bakar", first_response)
+        self.assertIsNotNone(self.agent.pending_action)
+
+        second_response = self.agent.process("bakar")
+
+        self.assertIn("Produk: Ayam Bakar", second_response)
+        self.assertIn("- Gula x1", second_response)
+        self.assertIn("Produk tidak ditemukan", second_response)
+        self.assertIn("- sabun", second_response)
+        self.assertIsNone(self.agent.pending_action)
+        self.assertEqual(
+            [(item.product_name, item.qty) for item in self.agent.cart.items],
+            [("Ayam Bakar", 1), ("Gula", 1)],
         )
 
     def test_checkout_creates_sale_and_clears_cart(self) -> None:

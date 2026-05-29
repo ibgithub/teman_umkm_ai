@@ -56,6 +56,45 @@ class TemanUmkmLlm:
             f"Subtotal cart: Rp {subtotal}"
         )
 
+    def items_added_summary(
+        self,
+        added_items: list[tuple[str, int]],
+        cart: CartSession,
+    ) -> str:
+        return self.order_summary(added_items, missing_keywords=[], cart=cart)
+
+    def order_summary(
+        self,
+        added_items: list[tuple[str, int]],
+        missing_keywords: list[str],
+        cart: CartSession,
+    ) -> str:
+        lines = ["AI:", "Berhasil menambahkan:"]
+
+        if added_items:
+            for product_name, qty in added_items:
+                lines.append(f"- {product_name} x{qty}")
+        else:
+            lines.append("- Tidak ada")
+
+        if missing_keywords:
+            lines.append("")
+            lines.append("Produk tidak ditemukan:")
+            for keyword in missing_keywords:
+                lines.append(f"- {keyword}")
+
+        lines.append("")
+        lines.append("Isi cart:")
+        if cart.is_empty():
+            lines.append("- Cart masih kosong")
+        else:
+            for item in cart.items:
+                lines.append(f"- {item.product_name} x{item.qty} = Rp {item.total}")
+
+        lines.append("")
+        lines.append(f"Total: Rp {cart.subtotal}")
+        return "\n".join(lines)
+
     def item_removed(self, item: CartItem, subtotal: int | float) -> str:
         return (
             "AI:\n"

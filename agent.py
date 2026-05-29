@@ -31,6 +31,11 @@ class PendingAction:
     remaining_commands: list[SingleCommand] | None = None
 
 
+@dataclass
+class ProductNotFound:
+    keyword: str
+
+
 class TemanUmkmAgent:
     def __init__(self, client: TemanUmkmClient, llm: TemanUmkmLlm | None = None) -> None:
         self.client = client
@@ -82,19 +87,70 @@ class TemanUmkmAgent:
 
     def _handle_multi_command(self, command: MultiCommand) -> str:
         responses: list[str] = []
+        added_items: list[tuple[str, int]] = []
+        missing_keywords: list[str] = []
 
         for index, child_command in enumerate(command.commands):
-            response = self._handle_command(child_command)
-            responses.append(response)
+            if isinstance(child_command, AddItemCommand):
+                result = self._add_item_for_multi(child_command)
+                if isinstance(result, CartItem):
+                    added_items.append((result.product_name, child_command.qty))
+                elif isinstance(result, ProductNotFound):
+                    missing_keywords.append(result.keyword)
+                else:
+                    if added_items or missing_keywords:
+                        responses.append(
+                            self.llm.order_summary(
+                                added_items,
+                                missing_keywords,
+                                self.cart,
+                            )
+                        )
+                        added_items = []
+                        missing_keywords = []
+                    responses.append(result)
+            else:
+                if added_items or missing_keywords:
+                    responses.append(
+                        self.llm.order_summary(
+                            added_items,
+                            missing_keywords,
+                            self.cart,
+                        )
+                    )
+                    added_items = []
+                    missing_keywords = []
+                responses.append(self._handle_command(child_command))
 
             if self.pending_action is not None:
                 self.pending_action.remaining_commands = command.commands[index + 1 :]
                 return self.llm.combine_responses(responses)
 
-        responses.append(self.llm.show_cart(self.cart))
+        if added_items or missing_keywords:
+            responses.append(
+                self.llm.order_summary(
+                    added_items,
+                    missing_keywords,
+                    self.cart,
+                )
+            )
+
         return self.llm.combine_responses(responses)
 
     def _add_item(self, command: AddItemCommand) -> str:
+        result = self._add_item_for_multi(command)
+        if isinstance(result, CartItem):
+            return self.llm.item_added(result, self.cart.subtotal)
+
+        if isinstance(result, ProductNotFound):
+            return self.llm.product_not_found(result.keyword)
+
+        return result
+
+    def _add_item_for_multi(
+        self,
+        command: AddItemCommand,
+    ) -> CartItem | ProductNotFound | str:
         merchant_id = self._get_merchant_id()
         if merchant_id is None:
             return self.llm.merchant_not_found()
@@ -103,13 +159,16 @@ class TemanUmkmAgent:
         match_result = match_products(products, command.product_keyword)
 
         if match_result.has_exact_match():
-            return self._add_product_to_cart(match_result.exact, command.qty)
+            return self._add_product_to_cart_item(match_result.exact, command.qty)
 
         if not match_result.has_candidates():
-            return self.llm.product_not_found(command.product_keyword)
+            return ProductNotFound(keyword=command.product_keyword)
 
         if match_result.has_single_candidate():
-            return self._add_product_to_cart(match_result.candidates[0], command.qty)
+            return self._add_product_to_cart_item(
+                match_result.candidates[0],
+                command.qty,
+            )
 
         self.pending_action = PendingAction(
             action_type="add_item",
@@ -150,9 +209,13 @@ class TemanUmkmAgent:
         return self.llm.unknown_command()
 
     def _add_product_to_cart(self, product: dict[str, Any], qty: int) -> str:
+        item = self._add_product_to_cart_item(product, qty)
+        return self.llm.item_added(item, self.cart.subtotal)
+
+    def _add_product_to_cart_item(self, product: dict[str, Any], qty: int) -> CartItem:
         item: CartItem = self.cart.add_item(product, qty)
         self.context.remember_product(product, action="add_item")
-        return self.llm.item_added(item, self.cart.subtotal)
+        return item
 
     def _remove_item(self, command: RemoveItemCommand) -> str:
         item = self.cart.remove_item(command.product_keyword)
