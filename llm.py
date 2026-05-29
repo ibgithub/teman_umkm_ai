@@ -8,6 +8,9 @@ from cart import CartItem, CartSession
 class TemanUmkmLlm:
     """Response layer. Replace this class later when using a real LLM API."""
 
+    def combine_responses(self, responses: list[str]) -> str:
+        return "\n\n".join(response for response in responses if response.strip())
+
     def unknown_command(self) -> str:
         return (
             "AI: Saya belum mengerti. Coba ketik: tambah 2 kopi, cart, "

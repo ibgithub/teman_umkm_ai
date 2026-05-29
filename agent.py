@@ -13,9 +13,11 @@ from parser import (
     AddItemCommand,
     AddLastItemCommand,
     ClearCartCommand,
+    MultiCommand,
     PayCommand,
     RemoveItemCommand,
     ShowCartCommand,
+    SingleCommand,
     UserCommand,
     parse_user_message,
 )
@@ -26,6 +28,7 @@ class PendingAction:
     action_type: Literal["add_item"]
     qty: int
     candidates: list[dict[str, Any]]
+    remaining_commands: list[SingleCommand] | None = None
 
 
 class TemanUmkmAgent:
@@ -53,6 +56,9 @@ class TemanUmkmAgent:
         return self._handle_command(command)
 
     def _handle_command(self, command: UserCommand) -> str:
+        if isinstance(command, MultiCommand):
+            return self._handle_multi_command(command)
+
         if isinstance(command, AddItemCommand):
             return self._add_item(command)
 
@@ -73,6 +79,20 @@ class TemanUmkmAgent:
             return self._pay(command)
 
         return self.llm.unknown_command()
+
+    def _handle_multi_command(self, command: MultiCommand) -> str:
+        responses: list[str] = []
+
+        for index, child_command in enumerate(command.commands):
+            response = self._handle_command(child_command)
+            responses.append(response)
+
+            if self.pending_action is not None:
+                self.pending_action.remaining_commands = command.commands[index + 1 :]
+                return self.llm.combine_responses(responses)
+
+        responses.append(self.llm.show_cart(self.cart))
+        return self.llm.combine_responses(responses)
 
     def _add_item(self, command: AddItemCommand) -> str:
         merchant_id = self._get_merchant_id()
@@ -116,7 +136,16 @@ class TemanUmkmAgent:
         self.pending_action = None
 
         if pending_action.action_type == "add_item":
-            return self._add_product_to_cart(product, pending_action.qty)
+            responses = [self._add_product_to_cart(product, pending_action.qty)]
+
+            if pending_action.remaining_commands:
+                responses.append(
+                    self._handle_multi_command(
+                        MultiCommand(commands=pending_action.remaining_commands)
+                    )
+                )
+
+            return self.llm.combine_responses(responses)
 
         return self.llm.unknown_command()
 
