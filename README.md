@@ -5,6 +5,7 @@ CLI chatbot sederhana untuk membuat transaksi penjualan ke API Teman UMKM.
 ## Struktur
 
 - `main.py` sebagai wrapper untuk menjalankan CLI lama
+- `app/main.py` untuk FastAPI web service
 - `app/cli.py` untuk loop CLI
 - `app/agent.py` untuk orkestrasi chatbot
 - `app/cart.py` untuk menyimpan cart sementara di memory
@@ -37,6 +38,8 @@ Credential bisa dioverride lewat environment variable.
 
 ## Jalankan
 
+### CLI
+
 ```bash
 python main.py
 ```
@@ -45,6 +48,37 @@ Atau:
 
 ```bash
 python -m app.cli
+```
+
+### FastAPI
+
+```bash
+uvicorn app.main:app --reload
+```
+
+Endpoint:
+
+```http
+GET /health
+POST /chat
+```
+
+Contoh request `POST /chat`:
+
+```json
+{
+  "session_id": "kasir-1",
+  "message": "beli kopi dan gula"
+}
+```
+
+Contoh response:
+
+```json
+{
+  "session_id": "kasir-1",
+  "reply": "AI:\nBerhasil menambahkan:\n- Kopi x1\n- Gula x1"
+}
 ```
 
 Contoh perintah:
