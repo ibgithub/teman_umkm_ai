@@ -4,15 +4,17 @@ CLI chatbot sederhana untuk membuat transaksi penjualan ke API Teman UMKM.
 
 ## Struktur
 
-- `main.py` untuk loop CLI
-- `agent.py` untuk orkestrasi chatbot
-- `cart.py` untuk menyimpan cart sementara di memory
-- `context.py` untuk menyimpan konteks percakapan terakhir
-- `matcher.py` untuk mencari produk dan menangani kandidat ambigu
-- `parser.py` untuk parsing pesan user menjadi command
-- `llm.py` untuk membuat response teks AI
-- `api.py` untuk client API Teman UMKM
-- `config.py` untuk konfigurasi environment
+- `main.py` sebagai wrapper untuk menjalankan CLI lama
+- `app/cli.py` untuk loop CLI
+- `app/agent.py` untuk orkestrasi chatbot
+- `app/cart.py` untuk menyimpan cart sementara di memory
+- `app/context.py` untuk menyimpan konteks percakapan terakhir
+- `app/matcher.py` untuk mencari produk dan menangani kandidat ambigu
+- `app/parser.py` untuk parsing pesan user menjadi command
+- `app/llm.py` untuk membuat response teks AI
+- `app/api.py` untuk client API Teman UMKM
+- `app/config.py` untuk konfigurasi environment
+- `tests/` untuk unit test parser dan agent behavior
 
 ## Setup
 
@@ -39,10 +41,18 @@ Credential bisa dioverride lewat environment variable.
 python main.py
 ```
 
+Atau:
+
+```bash
+python -m app.cli
+```
+
 Contoh perintah:
 
 ```text
 tambah 2 kopi
+beli kopi dan gula
+beli 2 kopi, 1 gula, 3 teh
 tambah lagi
 tambah 1 lagi
 cart
@@ -55,6 +65,12 @@ exit
 Catatan: command `jual 2 kopi` masih didukung sebagai alias dari `tambah 2 kopi`.
 
 Catatan: command `tambah lagi` dan `tambah 1 lagi` memakai produk terakhir yang berhasil masuk cart.
+
+## Test
+
+```bash
+python -m unittest discover -s tests
+```
 
 Contoh alur ambigu:
 

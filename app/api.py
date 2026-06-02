@@ -4,7 +4,7 @@ from typing import Any
 
 import requests
 
-from config import BASE_URL, PASSWORD, REQUEST_TIMEOUT, USERNAME
+from .config import BASE_URL, PASSWORD, REQUEST_TIMEOUT, USERNAME
 
 
 class TemanUmkmApiError(RuntimeError):

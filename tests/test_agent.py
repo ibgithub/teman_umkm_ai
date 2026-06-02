@@ -1,7 +1,7 @@
 import unittest
 from typing import Any
 
-from agent import TemanUmkmAgent
+from app.agent import TemanUmkmAgent
 
 
 class FakeTemanUmkmClient:

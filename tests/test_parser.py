@@ -1,6 +1,6 @@
 import unittest
 
-from parser import AddItemCommand, MultiCommand, parse_user_message
+from app.parser import AddItemCommand, MultiCommand, parse_user_message
 
 
 class ParserTest(unittest.TestCase):
