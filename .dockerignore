@@ -1,0 +1,13 @@
+.git
+.docker-cli-config
+.idea
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.mypy_cache
+.ruff_cache
+uvicorn.out.log
+uvicorn.err.log

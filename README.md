@@ -106,6 +106,30 @@ Catatan: command `tambah lagi` dan `tambah 1 lagi` memakai produk terakhir yang 
 python -m unittest discover -s tests
 ```
 
+## Docker
+
+Build image:
+
+```bash
+docker build -t teman-umkm-ai .
+```
+
+Run container:
+
+```bash
+docker run --rm -p 8000:8000 ^
+  -e TEMAN_UMKM_USERNAME=merchant6 ^
+  -e TEMAN_UMKM_PASSWORD=merchant6 ^
+  -e TEMAN_UMKM_BASE_URL=https://api.teman-umkm.com ^
+  teman-umkm-ai
+```
+
+Lalu buka:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
 Contoh alur ambigu:
 
 ```text
