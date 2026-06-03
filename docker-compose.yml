@@ -1,0 +1,16 @@
+services:
+
+  teman-umkm-ai:
+    build: .
+    container_name: teman-umkm-ai
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - .:/app
+
+    environment:
+      APP_ENV: dev
+
+    restart: unless-stopped
