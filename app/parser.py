@@ -100,6 +100,8 @@ def parse_natural_order_command(normalized: str) -> AddItemCommand | MultiComman
         "beli ",
         "pesan ",
         "order ",
+        "tambah ",
+        "jual ",
     ]
 
     items_text = ""

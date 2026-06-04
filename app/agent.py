@@ -21,7 +21,17 @@ from .parser import (
     UserCommand,
     parse_user_message,
 )
+from .normalizer import normalize_command
 
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s"
+)
+
+logger = logging.getLogger("teman_umkm_ai")
+logger.setLevel(logging.INFO)
 
 @dataclass
 class PendingAction:
@@ -55,6 +65,14 @@ class TemanUmkmAgent:
             return self._resolve_pending_action(user_message)
 
         command = parse_user_message(user_message)
+        if command is None:
+            normalized = normalize_command(user_message)
+            logger.info(f"ORIGINAL   : {user_message}")
+            logger.info(f"NORMALIZED : {normalized}")
+
+            if normalized:
+                command = parse_user_message(normalized)
+
         if command is None:
             return self.llm.unknown_command()
 

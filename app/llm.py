@@ -148,3 +148,4 @@ class TemanUmkmLlm:
             f"Dibayar: Rp {paid_amount}\n"
             f"Kembalian: Rp {change}"
         )
+
