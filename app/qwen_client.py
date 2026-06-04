@@ -8,7 +8,7 @@ client = OpenAI(
 
 def ask_qwen(prompt: str) -> str:
     response = client.chat.completions.create(
-        model="qwen2.5:7b",
+        model="qwen2.5:1.5b",   #qwen2.5:7b
         temperature=0,
         messages=[
             {

@@ -47,6 +47,20 @@ class ProductNotFound:
 
 
 class TemanUmkmAgent:
+    NORMILIZER_WORDS = {
+        "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan", "sepuluh"
+        "sebelas", "belas", "puluh", "ratus", "ribu", "juta",
+        "masukin", "masukkan", "tambahkan", "belikan", "bayarin",
+    }
+
+    def should_use_normalizer(self, text: str) -> bool:
+        normalized = text.lower()
+
+        return any(
+            word in normalized.split()
+            for word in self.NORMILIZER_WORDS
+        )
+
     def __init__(self, client: TemanUmkmClient, llm: TemanUmkmLlm | None = None) -> None:
         self.client = client
         self.llm = llm or TemanUmkmLlm()
@@ -65,7 +79,7 @@ class TemanUmkmAgent:
             return self._resolve_pending_action(user_message)
 
         command = parse_user_message(user_message)
-        if command is None:
+        if command is None or self.should_use_normalizer(user_message):
             normalized = normalize_command(user_message)
             logger.info(f"ORIGINAL   : {user_message}")
             logger.info(f"NORMALIZED : {normalized}")
